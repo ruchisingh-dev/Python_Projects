@@ -70,11 +70,97 @@ class Board:
         # bottom right: (row+1, col+1)
 
         num_neighboring_bombs = 0
+        for r in range (max(0, row-1), min(self.dim_size-1,row+1)+1):
+            for c in range (max(0,col-1), min(self.dim_size-1, col+1)+1):
+                if r == row and c == col:
+                    # our original location, don't check
+                    continue
+                if self.board[r][c] == '*':
+                    num_neighboring_bombs+=1
+        return num_neighboring_bombs
+
+
+    def dig(self, row, col):
+        # dig at the location
+        # return true if successful dig, false if bomb dug
+        
+
+        # few scenerio
+        # hit a bomb --> game over
+        # dig at location with neiboring bombs --> finish dig
+        # dig at the location with no neiboring bomb --> recursively dig neighbors
+        self.dug.add((row, col)) # keep track the we dug here
+
+        if self.board[row][col] == '*':
+            return False
+        elif self.board[row][col] > 0:
+            return True
+        # self.board[row][col] == 0
+        for r in range (max(0, row-1), min(self.dim_size-1,row+1)+1):
+            for c in range (max(0,col-1), min(self.dim_size-1, col+1)+1):
+                if (r,c) in self.dug:
+                    continue # don't dig where you already dug
+                self.dig(r, c)
+        
+        # if our initial dug didn't hit the a bomb, then we shouldn't hit the bomb here
+        return True
+
+    def __str__(self, row, col):
+        # this function print what this function return 
+        # return the string that shows the board to the player
+
+        # let's create a new array that are visible to the user
+        visible_board = [[None for _ in range(self.dim_size)] for _ in range(self.dim_size)]
+        for row in range(self.dim_size):
+            for col in range(self.dim_size):
+                if (row, col) in self.dug:
+                    visible_board[row][col] = str(self.board[row][col])
+                else:
+                    visible_board[row][col] = ' '
+                    
+        # put this together in a string
+        string_rep = ''
+        # get max column widths for printing
+        widths = []
+        for idx in range(self.dim_size):
+            columns = map(lambda x: x[idx], visible_board)
+            widths.append(
+                len(
+                    max(columns, key = len)
+                )
+            )
+
+        # print the csv strings
+        indices = [i for i in range(self.dim_size)]
+        indices_row = '   '
+        cells = []
+        for idx, col in enumerate(indices):
+            format = '%-' + str(widths[idx]) + "s"
+            cells.append(format % (col))
+        indices_row += '  '.join(cells)
+        indices_row += '  \n'
+        
+        for i in range(len(visible_board)):
+            row = visible_board[i]
+            string_rep += f'{i} |'
+            cells = []
+            for idx, col in enumerate(row):
+                format = '%-' + str(widths[idx]) + "s"
+                cells.append(format % (col))
+            string_rep += ' |'.join(cells)
+            string_rep += ' |\n'
+
+        str_len = int(len(string_rep) / self.dim_size)
+        string_rep = indices_row + '-'*str_len + '\n' + string_rep + '-'*str_len
+
+        return string_rep
+
 
 
 # play the game
 def play(dim_size=10, num_bombs=10):
     # step 1: create the board and plant the bomb
+    board = Board(dim_size, num_bombs)
     # step 2: show user the box and ask for where they want to dig
     # step 3a: if location is a bomb, show game over massage
     # step 3b: id location is not bomb, dig recursively until each square is at least next to bomb
