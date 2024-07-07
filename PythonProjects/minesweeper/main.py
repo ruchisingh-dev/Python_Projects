@@ -1,4 +1,5 @@
 import random
+import re
 
 
 # lets create a board object to represent the monesweeper game
@@ -8,7 +9,7 @@ class Board:
     def __init__(self, dim_size, no_bomb):
         # let's keep track of these parameter. they'll be helpfull later
         self.dim_size = dim_size
-        self.no_bombs = no_bomb
+        self.no_bomb = no_bomb
 
         # lets's create the board
         # helper function
@@ -35,7 +36,7 @@ class Board:
 
         # plant the bombs
         bombs_planted = 0
-        while bombs_planted < self.num_bombs:
+        while bombs_planted < self.no_bomb:
             loc = random.randint(0, self.dim_size**2 -1) # return a integer N such that a <= N <= b
             row = loc // self.dim_size # we want the number of times dim_s9ze goes into loc to tell us what row to look at
             col = loc % self.dim_size # we want the remainder to tell us what index in that row to look at
@@ -105,19 +106,20 @@ class Board:
         # if our initial dug didn't hit the a bomb, then we shouldn't hit the bomb here
         return True
 
-    def __str__(self, row, col):
-        # this function print what this function return 
-        # return the string that shows the board to the player
+    def __str__(self):
+        # this is a magic function where if you call print on this object,
+        # it'll print out what this function returns!
+        # return a string that shows the board to the player
 
-        # let's create a new array that are visible to the user
+        # first let's create a new array that represents what the user would see
         visible_board = [[None for _ in range(self.dim_size)] for _ in range(self.dim_size)]
         for row in range(self.dim_size):
             for col in range(self.dim_size):
-                if (row, col) in self.dug:
+                if (row,col) in self.dug:
                     visible_board[row][col] = str(self.board[row][col])
                 else:
                     visible_board[row][col] = ' '
-                    
+        
         # put this together in a string
         string_rep = ''
         # get max column widths for printing
@@ -158,11 +160,37 @@ class Board:
 
 
 # play the game
-def play(dim_size=10, num_bombs=10):
+def play(dim_size=10, no_bomb=10):
     # step 1: create the board and plant the bomb
-    board = Board(dim_size, num_bombs)
+    board = Board(dim_size, no_bomb)
     # step 2: show user the box and ask for where they want to dig
     # step 3a: if location is a bomb, show game over massage
     # step 3b: id location is not bomb, dig recursively until each square is at least next to bomb
     # step 4: repeat step 2 and 3a/b until there are no more places to dig
-    pass
+    safe = True
+
+    while len(board.dug) < board.dim_size ** 2 - no_bomb:
+        print(board)
+        user_input = re.split(',(\\s)*', input("Where would you like to dig? Input as row, col: "))
+        row, col = int(user_input[0]), int(user_input[-1])
+        if row < 0 or row >= board.dim_size or col < 0 or col >= dim_size:
+            print("Invalid location. Try Again.")
+            continue
+
+        # if it's valid, we dig
+        safe = board.dig(row, col)
+        if not safe:
+            # you dug a bomb 
+            break
+
+    # 2 ways to end loop, let's check which one
+    if safe:
+        print("CONGRACTULATION!!! YOU ARE VICTORIOUS")
+    else:
+        print("SORRY GAME OVER")
+        # Let's reveal the whole board
+        board.dug = [(r,c) for r in range(board.dim_size) for c in range(board.dim_size)]
+        print(board)
+
+if __name__ == '__main__': 
+    play()
